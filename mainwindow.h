@@ -71,6 +71,8 @@ private slots:
 
     void on_lineEditElemToSearc_textChanged(const QString &arg1);
 
+    void on_actionRunTasks_triggered();
+
 private:
     Ui::TaskManager *ui;
 

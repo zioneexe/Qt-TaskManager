@@ -45,6 +45,9 @@ void MainWindow::checkProcesses()
 {
     for (int i = 0; i < processesVector.size(); ++i)
     {
+        DWORD pid = processesVector[i].PID;
+        retrieveProcessData(pid, processesVector[i]);
+
         QString currentState = getProcessState(processesVector[i].PID);
 
         if (currentState == "Running") processTable->item(i, 3)->setBackground(QBrush(Qt::green));
@@ -67,6 +70,7 @@ void MainWindow::checkProcesses()
         processesVector[i].CPUTime = kernelTimeMs + userTimeMs;
 
         CloseHandle(hProcess);
+
     }
 }
 
@@ -866,7 +870,7 @@ void MainWindow::on_actionExit_triggered()
 
 void MainWindow::on_actionRefreshNow_triggered()
 {
-    refreshTable();
+    checkProcesses();
 }
 
 
@@ -892,3 +896,9 @@ void MainWindow::on_lineEditElemToSearc_textChanged(const QString &arg1)
 {
     elemToSearch = arg1.toDouble();
 }
+
+void MainWindow::on_actionRunTasks_triggered()
+{
+    createProcesses();
+}
+

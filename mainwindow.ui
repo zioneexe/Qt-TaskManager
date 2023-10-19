@@ -345,7 +345,7 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionRunTask"/>
+    <addaction name="actionRunTasks"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -358,9 +358,9 @@
    <addaction name="menuView"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionRunTask">
+  <action name="actionRunTasks">
    <property name="text">
-    <string>Run task</string>
+    <string>Run tasks</string>
    </property>
   </action>
   <action name="actionExit">
