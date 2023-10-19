@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "affinitydialog.h"
 #include "./ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -385,25 +386,18 @@ bool MainWindow::endProcess(DWORD pid)
     }
 }
 
-bool MainWindow::setAffinity(DWORD pid, int coreIndex)
-{
+bool MainWindow::setAffinity(DWORD pid, DWORD_PTR affinityMask) {
     HANDLE hProcess = OpenProcess(PROCESS_SET_INFORMATION, FALSE, pid);
-    if (!hProcess) return false;
-
-    DWORD_PTR affinityMask = 0; // Initialize the affinity mask
-
-    // Toggle the core's bit in the affinity mask
-    affinityMask = 1 << coreIndex;
-
-    if (SetProcessAffinityMask(hProcess, affinityMask))
-    {
-        CloseHandle(hProcess);
-        return true;
-    }
-    else
-    {
+    if (!hProcess) {
         return false;
-        CloseHandle(hProcess);
+    }
+
+    if (SetProcessAffinityMask(hProcess, affinityMask)) {
+        CloseHandle(hProcess); // Close the handle after successful operation
+        return true;
+    } else {
+        CloseHandle(hProcess); // Close the handle in case of failure
+        return false;
     }
 }
 
@@ -424,6 +418,17 @@ bool MainWindow::setPriority(DWORD pid, DWORD priorityClass)
     }
 }
 
+void MainWindow::showAffinityDialog(DWORD pid) {
+    // Create and display the custom dialog for setting CPU affinity
+    AffinityDialog affinityDialog(this);
+
+    if (affinityDialog.exec() == QDialog::Accepted) {
+        // The user accepted the changes in the dialog; apply the CPU affinity.
+        DWORD_PTR affinityMask = affinityDialog.getAffinityMask();
+        setAffinity(pid, affinityMask);
+    }
+}
+
 void MainWindow::showContextMenu(const QPoint& pos)
 {
     QTableWidgetItem* item = processTable->itemAt(pos);
@@ -433,12 +438,11 @@ void MainWindow::showContextMenu(const QPoint& pos)
         DWORD pid = processesVector[row].PID;
 
         contextMenu = new QMenu(processTable);
-        endAction = new QAction("End task", processTable);
-        suspendAction = new QAction("Suspend", processTable);
-        resumeAction = new QAction("Resume", processTable);
-        setAffinityMenu = new QMenu("Set affinity", contextMenu);
+        endAction = new QAction("End task", contextMenu);
+        suspendAction = new QAction("Suspend", contextMenu);
+        resumeAction = new QAction("Resume", contextMenu);
+        setAffinityAction = new QAction("Set affinity", contextMenu);
         setPriorityMenu = new QMenu("Change priority", contextMenu);
-        affinityChoiceGroup = new QActionGroup(setAffinityMenu);
         realtimePriorityClass = new QAction("Realtime", setPriorityMenu);
         highPriorityClass = new QAction("High", setPriorityMenu);
         aboveNormalPriorityClass = new QAction("Above normal", setPriorityMenu);
@@ -451,30 +455,10 @@ void MainWindow::showContextMenu(const QPoint& pos)
         contextMenu->addAction(endAction);
         contextMenu->addAction(suspendAction);
         contextMenu->addAction(resumeAction);
-        contextMenu->addMenu(setAffinityMenu);
+        contextMenu->addAction(setAffinityAction);
         contextMenu->addMenu(setPriorityMenu);
 
-        for (int i = 0; i < 16; ++i)
-        {
-            QAction* affinityCore = new QAction(QString("Core %1").arg(i), this);
-            affinityCores.push_back(affinityCore);
-            affinityCore->setCheckable(true);
 
-            affinityChoiceGroup->addAction(affinityCore);
-            setAffinityMenu->addAction(affinityCore);
-
-            connect(affinityCores[i], &QAction::toggled, this, [this, pid, i](bool checked) {
-                DWORD_PTR affinityMask = 0;
-                for (int coreIndex = 0; coreIndex < 16; ++coreIndex) {
-                    if (affinityCores[coreIndex]->isChecked()) {
-                        affinityMask |= (1 << coreIndex);
-                    }
-                }
-                if (affinityMask != 0) {
-                    setAffinity(pid, affinityMask);
-                }
-            });
-        }
 
         setPriorityMenu->addAction(realtimePriorityClass);
         setPriorityMenu->addAction(highPriorityClass);
@@ -528,6 +512,13 @@ void MainWindow::showContextMenu(const QPoint& pos)
         connect(processModeBackgroundEnd, &QAction::triggered, this, [this, pid] {
             setPriority(pid, PROCESS_MODE_BACKGROUND_END);
         });
+
+        connect(setAffinityAction, &QAction::triggered, this, [this, pid] {
+            showAffinityDialog(pid);
+        });
+
+        // Add the "Set Affinity" QAction to the context menu
+        contextMenu->addAction(setAffinityAction);
 
         QAction* selectedItem = contextMenu->exec(QCursor::pos());
     }

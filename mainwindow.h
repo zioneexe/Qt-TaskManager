@@ -45,7 +45,7 @@ public:
     bool suspendProcess(DWORD pid);
     bool resumeProcess(DWORD pid);
     bool endProcess(DWORD pid);
-    bool setAffinity(DWORD pid, int coreIndex);
+    bool setAffinity(DWORD pid, DWORD_PTR affinityMask);
     bool setPriority(DWORD pid, DWORD priorityClass);
     void showContextMenu(const QPoint& pos);
     void refreshTable();
@@ -90,14 +90,13 @@ private:
 
     std::vector<FILETIME> createTimeStartArr, exitTimeStartArr, kernelTimeStartArr, userTimeStartArr;
 
+    void showAffinityDialog(DWORD pid);
     QMenu* contextMenu;
     QAction* endAction;
     QAction* suspendAction;
     QAction* resumeAction;
-    QMenu* setAffinityMenu;
+    QAction* setAffinityAction;
     QMenu* setPriorityMenu;
-    QActionGroup* affinityChoiceGroup;
-    std::vector<QAction*> affinityCores;
     QAction* realtimePriorityClass;
     QAction* highPriorityClass;
     QAction* aboveNormalPriorityClass;

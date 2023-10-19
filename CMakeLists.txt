@@ -26,7 +26,14 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         process.h process.cpp
+        affinitydialog.h
     )
+
+add_custom_command(TARGET os3 POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/os3.exe.manifest"
+        "$<TARGET_FILE_DIR:os3>/os3.exe.manifest")
+
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET os3 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
