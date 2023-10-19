@@ -159,7 +159,7 @@
                 <item>
                  <widget class="QLabel" name="label_4">
                   <property name="text">
-                   <string>step:</string>
+                   <string>steps count:</string>
                   </property>
                  </widget>
                 </item>

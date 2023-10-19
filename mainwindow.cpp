@@ -50,8 +50,8 @@ void MainWindow::checkProcesses()
 
         QString currentState = getProcessState(processesVector[i].PID);
 
-        if (currentState == "Running") processTable->item(i, 3)->setBackground(QBrush(Qt::green));
-        else if (currentState == "Suspended") processTable->item(i, 3)->setBackground(QBrush(Qt::yellow));
+        if (currentState == "Suspended") processTable->item(i, 3)->setBackground(QBrush(Qt::yellow));
+        else if (currentState == "Running") processTable->item(i, 3)->setBackground(QBrush(Qt::green));
         else if (currentState == "Terminated") processTable->item(i, 3)->setBackground(QBrush(Qt::red));
         else if (currentState == "ERROR") processTable->item(i, 3)->setBackground(QBrush(Qt::gray));
 
@@ -463,8 +463,16 @@ void MainWindow::showContextMenu(const QPoint& pos)
             affinityChoiceGroup->addAction(affinityCore);
             setAffinityMenu->addAction(affinityCore);
 
-            connect(affinityCores[i], &QAction::triggered, this, [this, pid, i] {
-                setAffinity(pid, i);
+            connect(affinityCores[i], &QAction::toggled, this, [this, pid, i](bool checked) {
+                DWORD_PTR affinityMask = 0;
+                for (int coreIndex = 0; coreIndex < 16; ++coreIndex) {
+                    if (affinityCores[coreIndex]->isChecked()) {
+                        affinityMask |= (1 << coreIndex);
+                    }
+                }
+                if (affinityMask != 0) {
+                    setAffinity(pid, affinityMask);
+                }
             });
         }
 
@@ -586,23 +594,11 @@ void MainWindow::refreshTable()
                     affinityString += ", ";
                 }
                 if (coreStart == lastCore) {
-                    affinityString += QString::number(coreStart + 1);
+                    affinityString += QString::number(coreStart);
                 } else {
-                    affinityString += QString::number(coreStart + 1) + "-" + QString::number(lastCore + 1);
+                    affinityString += QString::number(coreStart) + "-" + QString::number(lastCore);
                 }
                 coreStart = -1;
-            }
-        }
-
-        // Handle the case where the range ends at the last core
-        if (coreStart != -1) {
-            if (!affinityString.isEmpty()) {
-                affinityString += ", ";
-            }
-            if (coreStart == lastCore) {
-                affinityString += QString::number(coreStart + 1);
-            } else {
-                affinityString += QString::number(coreStart + 1) + "-" + QString::number(lastCore + 1);
             }
         }
 
