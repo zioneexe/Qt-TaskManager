@@ -1,3 +1,4 @@
+
 #ifndef AFFINITYDIALOG_H
 #define AFFINITYDIALOG_H
 

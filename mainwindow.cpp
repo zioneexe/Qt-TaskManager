@@ -220,7 +220,7 @@ void MainWindow::createProcesses()
 
     if (ui->checkBoxNetStat->isChecked())
     {
-        std::string cmd = "cmd /c netstat -n 10";
+        std::string cmd = "netstat -n 10";
 
         ZeroMemory(&stInfo, sizeof(stInfo));
         ZeroMemory(&pcInfo, sizeof(pcInfo));
@@ -368,23 +368,50 @@ bool MainWindow::resumeProcess(DWORD pid)
     return true;
 }
 
-bool MainWindow::endProcess(DWORD pid)
-{
-    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+void MainWindow::EnumChildProcesses(DWORD parentPID) {
+    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnap == INVALID_HANDLE_VALUE) {
+        // Handle the error.
+        return;
+    }
+
+    PROCESSENTRY32 pe32;
+    pe32.dwSize = sizeof(PROCESSENTRY32);
+
+    if (Process32First(hSnap, &pe32)) {
+        do {
+            if (pe32.th32ParentProcessID == parentPID) {
+                HANDLE hChildProcess = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, FALSE, pe32.th32ProcessID);
+                if (hChildProcess) {
+                    TerminateProcess(hChildProcess, 0);
+                    WaitForSingleObject(hChildProcess, INFINITE);
+                    CloseHandle(hChildProcess);
+                }
+            }
+        } while (Process32Next(hSnap, &pe32));
+    }
+
+    CloseHandle(hSnap);
+}
+
+bool MainWindow::endProcess(DWORD pid) {
+    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, FALSE, pid);
     if (!hProcess) return false;
 
-    if (TerminateProcess(hProcess, 0))
-    {
+    // Enumerate and terminate child processes of the given parent process.
+    EnumChildProcesses(pid);
+
+    if (TerminateProcess(hProcess, 0)) {
         WaitForSingleObject(hProcess, INFINITE);
         CloseHandle(hProcess);
         return true; // Process terminated successfully
-    } else
-    {
+    } else {
         // Error terminating the process
         CloseHandle(hProcess);
         return false;
     }
 }
+
 
 bool MainWindow::setAffinity(DWORD pid, DWORD_PTR affinityMask) {
     HANDLE hProcess = OpenProcess(PROCESS_SET_INFORMATION, FALSE, pid);

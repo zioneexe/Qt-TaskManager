@@ -32,7 +32,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    int findIndex(const std::vector<Process>& myVector, const Process& objToFind);
+
+    void EnumChildProcesses(DWORD parentPID);
     QString formatCPUTime(ULONGLONG milliseconds);
     QString formatMemory(DWORD bytes);
     void checkProcesses();
